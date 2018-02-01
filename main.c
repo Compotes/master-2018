@@ -9,6 +9,7 @@
 #include "kicker.h"
 #include "leds.h"
 #include "dip_switch.h"
+#include "jetson.h"
 #include "chprintf.h"
 
 #define MAX_SPEED 923
@@ -18,7 +19,7 @@
 #define NEER_POINT 400
 #define ALIGN_POWER 50
 
-#define DRIBLER_SPEED -2048
+#define DRIBLER_SPEED -1900
 
 #define PI 3.14159
 
@@ -30,7 +31,7 @@
 #define OBJECT_NOT_FOUND 420
 #define SEARCH_SPEED 20
 
-#define DRIBLER_REACTION_TIME (6+FERQUES*4)
+#define DRIBLER_REACTION_TIME 400
 
 #define CAMERA_CENTER 4
 #define AROUND_BALL_ALIGN 0
@@ -44,14 +45,9 @@
 
 int16_t movement_degree = 90;
 int16_t old_line = 0;
-int16_t old_azimuth = 0;
 
 int16_t dribler_timer = 0;
 
-int16_t ball_degree = OBJECT_NOT_FOUND;
-int16_t ball_distance = OBJECT_NOT_FOUND;
-int16_t goal_degree = OBJECT_NOT_FOUND;
-int16_t goal_distance = OBJECT_NOT_FOUND;
 
 int8_t have_ball = 0;
 
@@ -63,6 +59,7 @@ int32_t stop_time = 24000;
 
 int16_t sinus[91] = {0, 17, 34, 52, 69, 87, 104, 121, 139, 156, 173, 190, 207, 224, 241, 258, 275, 292, 309, 325, 342, 358, 374, 390, 406, 422, 438, 453, 469, 484, 499, 515, 529, 544, 559, 573, 587, 601, 615, 629, 642, 656, 669, 681, 694, 707, 719, 731, 743, 754, 766, 777, 788, 798, 809, 819, 829, 838, 848, 857, 866, 874, 882, 891, 898, 906, 913, 920, 927, 933, 939, 945, 951, 956, 961, 965, 970, 974, 978, 981, 984, 987, 990, 992, 994, 996, 997, 998, 999, 999, 1000};
 
+
 int16_t sinn(int16_t degree){
 	degree += 360;
 	degree %= 360;
@@ -72,7 +69,7 @@ int16_t sinn(int16_t degree){
 	return -sinus[90-degree%90];
 }
 
-int16_t robot_power(void){
+/*int16_t robot_power(void){
 	//return 50;
 	//return ((-ball_distance+650)/4 < 100)? 100 : (-ball_distance+650)/4;
 	int16_t a = MAX_ROBOT_POWER - (ball_distance - FAR_POINT)*(MAX_ROBOT_POWER - MIN_ROBOT_POWER)/(NEER_POINT-FAR_POINT); // rychlost_rastu = 4, celkova_rychlost = 650
@@ -82,7 +79,7 @@ int16_t robot_power(void){
 	if(ball_degree == OBJECT_NOT_FOUND) a = MAX_ROBOT_POWER;
 	a = MAX_ROBOT_POWER;
 	return a;
-}
+}*/
 
 int16_t abs_value_int(int16_t a) {
 	if (a < 0) a *= -1;
@@ -131,36 +128,13 @@ void set_movement(int16_t degree) {
 	}
 }
 
-void correct_motors_speeds(int8_t align_type, int16_t speed) {
+
+void correct_motors_speeds(int8_t align_type, int16_t speed, int16_t align_speed) {
 	int8_t p;
 	int32_t max = 0;
-	int16_t actual_azimuth = 0;
-	if(align_type != NOT_ALIGN) actual_azimuth = get_compass_degree();
-	//if(abs_value_int(actual_azimuth)< 5) actual_azimuth = 0;
-	//actual_azimuth = -ball_degree;
-	/*if(have_ball > 0)*/ //actual_azimuth = -goal_degree;
-
-	if(actual_azimuth == -OBJECT_NOT_FOUND) {
-		//motors_off();
-		if(have_ball > 0) align_type = AROUND_BALL_ALIGN;
-		if(old_azimuth < 0) {
-			actual_azimuth = -SEARCH_SPEED;
-			//if(align_type == CLASSIC_ALIGN) actual_azimuth /= 3;
-		} else {
-			actual_azimuth = SEARCH_SPEED;
-		}
-	} else {
-		old_azimuth = actual_azimuth;
+	if(align_type == NOT_ALIGN){
+		align_speed = 0;
 	}
-	//if(old_azimuth > 0 && align_type == CLASSIC_ALIGN) actual_azimuth /= 2;
-	if(align_type == BASIC_ALIGN) {
-		if(actual_azimuth > 5) actual_azimuth = SEARCH_SPEED;
-		else if(actual_azimuth < -5) actual_azimuth = -SEARCH_SPEED;
-	} else if(align_type == NOT_ALIGN){
-		actual_azimuth = 0;
-	}
-
-	//actual_azimuth *= set_align_speed(ALIGN_POWER);
 
 	for (p = 0; p < NUMBER_OF_MOTORS; p++) {
 		if (abs_value_int(motors_speeds[p]) > max) {
@@ -170,11 +144,11 @@ void correct_motors_speeds(int8_t align_type, int16_t speed) {
 
 	for (p = 0; p < NUMBER_OF_MOTORS; p++) {
 		//if(motors_speeds[p] == max) motors_speeds[p] *= 1.5;
-		motors_speeds[p] = motors_speeds[p] * (set_motor_speed(speed) - actual_azimuth) / max;//(max*1.5);
+		motors_speeds[p] = motors_speeds[p] * set_motor_speed((100 - align_speed)*speed/100) / max;//(max*1.5);
 	}
 
 	for (p = 0; p < NUMBER_OF_MOTORS; p++) {
-		motors_speeds[p] += actual_azimuth;
+		motors_speeds[p] += set_motor_speed((align_speed)*speed/100);
 	}
 
 	if(align_type == AROUND_BALL_ALIGN) {
@@ -194,6 +168,7 @@ void correct_motors_speeds(int8_t align_type, int16_t speed) {
 	}
 }
 
+/*
 void left_right(int8_t degree){
 	loop %= 2*move_time + 2*stop_time;
 	if(loop < move_time/2){
@@ -239,7 +214,7 @@ void eight(int32_t pseudo_diameter){
 		correct_motors_speeds(using_align, MAX_ROBOT_POWER/5);
 	}
 	correct_motors_speeds(using_align, MAX_ROBOT_POWER/2);
-}
+}*/
 
 
 int main(void) {
@@ -248,58 +223,78 @@ int main(void) {
 
 	board_init();
 	leds_init();
-	//compass_init();
+	jetson_init();
 	motors_init();
 	//camera_init();
 	line_init();
+	//compass_init();
 
-	int8_t i;
-	int8_t first = 0;
 	int16_t line_state;
 	int32_t l = 0;
-
+	uint8_t main_command;
+	uint8_t go = FALSE;
 	while (1) {
 		line_state = check_line();
+		get_jetson_values();//actualize ball_degree, robot_speed, robot_azimuth;
+		//chprintf(&SD3, "%d %d %d\r\n", ball_degree, robot_speed, robot_azimuth);
+		main_command = check_main_mailbox();
+		if(main_command == START_STOP){
+			if(!go){
+				go = TRUE;
+				led_command(FIRST_ON);
+			} else {
+				go = FALSE;
+				led_command(FIRST_OFF);
+			}
+			chThdSleepMilliseconds(10);
+		}
 		//chprintf((BaseSequentialStream*)&SD4, "%d\n", get_compass_degree());
 		//get_camera_values();
 		//chprintf(&SD4, "%d\n", get_dip_switch());
-		if(palReadPad(GPIOD, 14) || get_start()){
-			if(!first) {
-				led_command(FIRST_ON);
-				first = 1;
-			}
-			//circle(3);
-			//eight(3);
+
+		if(go || palReadPad(GPIOD, 14) || get_start()){
+
 			if(line_state == NO_LINE_DETECTED){
-				//set_movement(0);
+				//set_movement(ball_degree);
 				motors_off();
-				//circle(40000);
 			} else if(line_state == LINE_CALIBRATION){
 				using_align = LINE_CALIBRATION_ALIGN;
+				chprintf(&SD4, "main: som tu\n");
 			} else {
 
 			}
-			motors_off();
 			dribler_on();
-			using_align = NOT_ALIGN;
-			correct_motors_speeds(using_align, MAX_ROBOT_POWER);
-			loop++;
+			correct_motors_speeds(using_align, robot_speed, robot_azimuth);
+			//loop++;
 		} else {
-			if(first){
-				led_command(FIRST_OFF);
-				first = 0;
-			}
 			//loop = 0;
 			dribler_off();
 			motors_off();
 		}
 
-		if(i_have_ball()){
-			kick();
-			//dribler_kick();
+		if(get_dip_switch()){
+			dribler_off();
+		} else {
+			dribler_on();
+		}
+
+		if(i_have_ball() || main_command == KICK || dribler_timer > 0){
+			dribler_off();
+			if(dribler_timer > 0 ){
+				dribler_timer--;
+			} else {
+				dribler_timer = DRIBLER_REACTION_TIME;
+			}
+			//change_motors_speeds(0, 0, 0, 0, 0, MASTER_THREAD_ID);
+			if(dribler_timer == 1) {
+				//chThdSleepMilliseconds(200);
+				kick();
+			}
 		} else {
 			dribler_timer = 0;
+			//dribler_on();
 		}
+		//dribler_on();
 		//loop++;
 		//left_right(20);
 		//dribler_off();
@@ -308,10 +303,16 @@ int main(void) {
 		//motors_speeds[0] = -1500;
 		//motors_off();
 		//chprintf(&SD4,"%d\r\n", check_line());
+		//dribler_on();
+
+		//correct_motors_speeds(using_align, robot_speed, robot_azimuth);
+		//motors_off();
+
+		//motors_speeds[1]=DRIBLER_SPEED;
 		change_motors_speeds();
 		if(l == 0) {
 			led_command(THIRD_BLICK);
-			kick();
+			//kick();
 		}
 		l++;
 		l%=40000;

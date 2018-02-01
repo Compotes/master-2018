@@ -11,7 +11,7 @@
 #define READY_PIN 2
 #define READY_GPIO GPIOD
 
-#define KICK_DURATION 10//0 // ms
+#define KICK_DURATION 100 // ms
 
 #define BALL_DETECT_PIN 15
 #define BALL_DETECT_GPIO GPIOD

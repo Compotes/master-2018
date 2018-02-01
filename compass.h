@@ -22,8 +22,19 @@ void write(uint8_t address, uint8_t value);
 
 void start(void);
 
+uint8_t start2(void);
+
+
 void get_compass_values(void);
 
 void get_calibration_status(void);
+
+void get_calibration_values(void);
+
+void set_calibration_values(void);
+
+void set_calibration_values2(void);
+
+void clean_serial(SerialDriver* SD);
 
 #endif

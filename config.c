@@ -1,5 +1,18 @@
 #include "config.h"
 
+static msg_t main_commands_queue[MAIN_QUEUE];
+static mailbox_t main_commands;
+
+msg_t check_main_mailbox(void){
+	msg_t ret = 0;
+	chMBFetch(&main_commands, &ret, TIME_IMMEDIATE);
+	return ret;
+}
+
+void send_to_main_mailbox(msg_t sending_command){
+	chMBPost(&main_commands, sending_command, TIME_INFINITE);
+}
+
 void set_pins(void)
 {
 	// START pin
@@ -124,4 +137,6 @@ void init_drivers(void) {
 void board_init(void) {
 	set_pins();
 	init_drivers();
+
+	chMBObjectInit(&main_commands, main_commands_queue, MAIN_QUEUE);
 }
