@@ -144,7 +144,7 @@ void correct_motors_speeds(int8_t align_type, int16_t speed, int16_t align_speed
 
 	for (p = 0; p < NUMBER_OF_MOTORS; p++) {
 		//if(motors_speeds[p] == max) motors_speeds[p] *= 1.5;
-		motors_speeds[p] = motors_speeds[p] * set_motor_speed((100 - align_speed)*speed/100) / max;//(max*1.5);
+		motors_speeds[p] = motors_speeds[p] * set_motor_speed((100 - abs_value_int(align_speed))*speed/100) / max;//(max*1.5);
 	}
 
 	for (p = 0; p < NUMBER_OF_MOTORS; p++) {
