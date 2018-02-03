@@ -87,6 +87,10 @@ static THD_FUNCTION(JetsonReadThread, arg) {
 			sdPut(&SD3, jetson_speed);
 			jetson_azimuth = (int16_t)sdGet(JETSON_SERIAL) - 100;
 			sdPut(&SD3, jetson_azimuth);
+			if(jetson_speed < 0){
+				jetson_degree += 180;
+				jetson_speed = -jetson_speed;
+			}
 			chMsgSend(jetson_save_thread, SAVE_JETSON_VALUES);
 		} else if(received_command == LINE_CALIBRATION_COMMAND){
 			send_to_line_mailbox(CALIBRATION);

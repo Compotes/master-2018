@@ -255,8 +255,7 @@ int main(void) {
 		if(go || palReadPad(GPIOD, 14) || get_start()){
 
 			if(line_state == NO_LINE_DETECTED){
-				//set_movement(ball_degree);
-				motors_off();
+				set_movement(ball_degree);
 			} else if(line_state == LINE_CALIBRATION){
 				using_align = LINE_CALIBRATION_ALIGN;
 				chprintf(&SD4, "main: som tu\n");
