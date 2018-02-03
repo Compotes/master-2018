@@ -5,11 +5,11 @@
 #include "hal.h"
 #include "leds.h"
 
-#define KICK_PIN 12
-#define KICK_GPIO GPIOC
+#define KICK_PIN 2
+#define KICK_GPIO GPIOD
 
-#define READY_PIN 2
-#define READY_GPIO GPIOD
+#define READY_PIN 12
+#define READY_GPIO GPIOC
 
 #define KICK_DURATION 100 // ms
 
