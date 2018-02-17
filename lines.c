@@ -169,7 +169,7 @@ void determine_avoiding_direction(void) {
 		} else {
 			line_timer = 0;
 		}
-		if((old_max < 0 && res_max > 0) || (old_max > 0 && res_max < 0)){
+		if((old_max == old_x && old_x*res_x < 0) || (old_max == old_y && old_y*res_y < 0)){//(old_max < 0 && res_max > 0) || (old_max > 0 && res_max < 0)){
 			res_x = old_x;
 			res_y = old_y;
 		}
@@ -231,7 +231,7 @@ THD_FUNCTION(LineThread, arg) {
 		int16_t l = 0;
 		msg_t line_calibration_command;
 	while (1) {
-		adcConvert(&ADCD1, &line_sensors_cfg, line_sensors_values, 1);
+		//adcConvert(&ADCD1, &line_sensors_cfg, line_sensors_values, 1);
 		line_calibration_command = check_line_mailbox();
 		if(line_calibration_command == CALIBRATION){
 			//line_calibration_timer = 0;
@@ -327,9 +327,9 @@ THD_FUNCTION(LineCalibrationSaveThread, arg) {
 }
 
 void line_init(void) {
-	//adcStartConversion(&ADCD1, &line_sensors_cfg1, &line_sensors_values[0],1);
-	//adcStartConversion(&ADCD2, &line_sensors_cfg2, &line_sensors_values[6],1);
-	//adcStartConversion(&ADCD3, &line_sensors_cfg3, &line_sensors_values[11],1);
+	adcStartConversion(&ADCD1, &line_sensors_cfg1, &line_sensors_values[0],1);
+	adcStartConversion(&ADCD2, &line_sensors_cfg2, &line_sensors_values[6],1);
+	adcStartConversion(&ADCD3, &line_sensors_cfg3, &line_sensors_values[11],1);
 
 	chMBObjectInit(&line_commands, line_commands_queue, LINE_QUEUE);
 

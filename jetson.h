@@ -31,8 +31,10 @@
 #define LINE_CALIBRATION_COMMAND 250
 #define INIT_COMMAND 249
 #define RESET_COMMAND 248
+#define DRIBLER_COMMAND 247
 
 #define START_STOP 3
+#define DRIBLER_ON_OFF 4
 #define KICK 2
 
 extern uint16_t ball_degree;

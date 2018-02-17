@@ -90,24 +90,27 @@ static THD_FUNCTION(JetsonReadThread, arg) {
 			if(jetson_speed < 0){
 				jetson_degree += 180;
 				jetson_speed = -jetson_speed;
+				jetson_degree %= 360;
 			}
 			chMsgSend(jetson_save_thread, SAVE_JETSON_VALUES);
 		} else if(received_command == LINE_CALIBRATION_COMMAND){
 			send_to_line_mailbox(CALIBRATION);
-			chprintf((BaseSequentialStream *)&SD4, "jetson: som tu\n");
+			//chprintf((BaseSequentialStream *)&SD4, "jetson: som tu\n");
 		} else if(received_command == INIT_COMMAND){
 			for(i = 0; i < NUMBER_OF_SENSORS; i++){
 				line_calibration_values_in[i] = sdGet(JETSON_SERIAL);
 				//line_calibration_values_in[i] = (line_calibration_values_in[i] << 8) | sdGet (JETSON_SERIAL);
-				chprintf((BaseSequentialStream *)&SD4, "jetson: nacital som %d\n", line_calibration_values_in[i]);
+				//chprintf((BaseSequentialStream *)&SD4, "jetson: nacital som %d\n", line_calibration_values_in[i]);
 			}
 			calibration_memory(JETSON_SAVE_CALIBRATION);
 			send_to_line_mailbox(LOAD_JETSON_CALIBRATION);
 		} else if(received_command == START_STOP_COMMAND){
 			send_to_main_mailbox(START_STOP);
+		} else if(received_command == DRIBLER_COMMAND){
+			send_to_main_mailbox(DRIBLER_ON_OFF+sdGet(JETSON_SERIAL));
 		} else if(received_command == KICK_COMMAND){
 			send_to_main_mailbox(KICK);
-			chprintf((BaseSequentialStream *)&SD4, "jetson: kick\n");
+			//chprintf((BaseSequentialStream *)&SD4, "jetson: kick\n");
 		}
 	}
 }

@@ -11,6 +11,7 @@
 #include "dip_switch.h"
 #include "jetson.h"
 #include "chprintf.h"
+#include <math.h>
 
 #define MAX_SPEED 923
 #define MAX_ROBOT_POWER 15
@@ -31,7 +32,7 @@
 #define OBJECT_NOT_FOUND 420
 #define SEARCH_SPEED 20
 
-#define DRIBLER_REACTION_TIME 400
+#define DRIBLER_REACTION_TIME 500
 
 #define CAMERA_CENTER 4
 #define AROUND_BALL_ALIGN 0
@@ -93,32 +94,23 @@ void motors_off(void) {
 	}
 }
 
-void dribler_on(void){
-	int8_t p;
-	for (p = 0; p < NUMBER_OF_DRIBLERS; p++) {
-		driblers_speeds[p] = DRIBLER_SPEED;
-		if(p%2==1) driblers_speeds[p] *= -1;
-	}
-}
-
-void dribler_kick(void){
-	int8_t p;
-	for (p = 0; p < NUMBER_OF_DRIBLERS; p++) {
-		driblers_speeds[p] = -DRIBLER_SPEED;
-		if(p%2==1) driblers_speeds[p] *= -1;
-	}
-}
-
-void dribler_off(void) {
-	int8_t p;
-	for (p = 0; p < NUMBER_OF_DRIBLERS; p++) {
-		driblers_speeds[p] = 0;
-	}
-
-}
-
 int16_t set_motor_speed(int16_t relative_speed) {
 	return relative_speed * MAX_SPEED / 100;
+}
+
+void set_dribler_speed(int32_t dribler_speed){
+	int8_t p;
+	for (p = 0; p < NUMBER_OF_DRIBLERS; p++) {
+		driblers_speeds[p] = set_motor_speed(dribler_speed);
+
+		if(p%2==1) driblers_speeds[p] *= -1;
+
+		if (driblers_speeds[p] > 0) {
+			driblers_speeds[p] += 1125;
+		} else if (driblers_speeds[p] < 0) {
+			driblers_speeds[p] -= 1125;
+		}
+	}
 }
 
 void set_movement(int16_t degree) {
@@ -146,7 +138,7 @@ void correct_motors_speeds(int8_t align_type, int16_t speed, int16_t align_speed
 		//if(motors_speeds[p] == max) motors_speeds[p] *= 1.5;
 		motors_speeds[p] = motors_speeds[p] * set_motor_speed((100 - abs_value_int(align_speed))*speed/100) / max;//(max*1.5);
 	}
-
+	//chprintf((BaseSequentialStream *)&SD4, "%d %d %d %d\n", robot_azimuth, motors_speeds[3], motors_speeds[1], motors_speeds[2]);
 	for (p = 0; p < NUMBER_OF_MOTORS; p++) {
 		motors_speeds[p] += set_motor_speed((align_speed)*speed/100);
 	}
@@ -233,7 +225,11 @@ int main(void) {
 	int32_t l = 0;
 	uint8_t main_command;
 	uint8_t go = FALSE;
+	uint8_t i = 0;
+	int16_t dribler_speed = 0;
+
 	while (1) {
+		motors_off();
 		line_state = check_line();
 		get_jetson_values();//actualize ball_degree, robot_speed, robot_azimuth;
 		//chprintf(&SD3, "%d %d %d\r\n", ball_degree, robot_speed, robot_azimuth);
@@ -247,6 +243,9 @@ int main(void) {
 				led_command(FIRST_OFF);
 			}
 			chThdSleepMilliseconds(10);
+		} else if(main_command >= DRIBLER_ON_OFF){
+			dribler_speed = main_command - DRIBLER_ON_OFF - 100;
+			chThdSleepMilliseconds(10);
 		}
 		//chprintf((BaseSequentialStream*)&SD4, "%d\n", get_compass_degree());
 		//get_camera_values();
@@ -256,29 +255,25 @@ int main(void) {
 
 			if(line_state == NO_LINE_DETECTED){
 				set_movement(ball_degree);
+				//for(i = 0; i < NUMBER_OF_MOTORS; i++){
+				//	chprintf(&SD4, "%d ", motors_speeds[i]);
+				//}
+				//chprintf(&SD4, "\n");
+				correct_motors_speeds(using_align, robot_speed, robot_azimuth);
 			} else if(line_state == LINE_CALIBRATION){
 				using_align = LINE_CALIBRATION_ALIGN;
-				chprintf(&SD4, "main: som tu\n");
+				correct_motors_speeds(using_align, robot_speed, robot_azimuth);
+				//chprintf(&SD4, "main: som tu\n");
 			} else {
-
+				correct_motors_speeds(using_align, 60, robot_azimuth);
 			}
-			dribler_on();
-			correct_motors_speeds(using_align, robot_speed, robot_azimuth);
 			//loop++;
-		} else {
-			//loop = 0;
-			dribler_off();
-			motors_off();
 		}
 
-		if(get_dip_switch()){
-			dribler_off();
-		} else {
-			dribler_on();
-		}
+		set_dribler_speed(dribler_speed);
 
 		if(i_have_ball() || main_command == KICK || dribler_timer > 0){
-			dribler_off();
+			set_dribler_speed(0);
 			if(dribler_timer > 0 ){
 				dribler_timer--;
 			} else {
