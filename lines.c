@@ -25,6 +25,7 @@ int32_t line_motor_speeds[NUMBER_OF_MOTORS];
 static int16_t dx[16] = {83, 56, 20, -20, -56, -83, -98, -98, -83, -56, -20,  20,  56,  83,  98, 98};
 static int16_t dy[16] = {56, 83, 98,  98,  83,  56,  20, -20, -56, -83, -98, -98, -83, -56, -20, 20};
 static int16_t line_result;
+static int16_t old_line_result = NO_LINE_DETECTED;
 static int32_t res_x, res_y, res_max, old_x, old_y, old_max;
 uint32_t line_timer = LINE_REACTION_TIME;
 uint32_t line_calibration_timer = LINE_CALIBRATION_TIME;
@@ -142,7 +143,7 @@ void determine_avoiding_direction(void) {
 
 	/*for(i = 0; i < NUMBER_OF_SENSORS; i++) {
 		round_data_values[i] *= INERTIA;
-		if(line_sensors_values[i] < 500){
+		if(line_sensors_values[i] < average_line_sensors_values[i]){
 			round_data_values[i] += (1.000 - INERTIA);
 		}
 		if (round_data_values[i] > 0.99 - INERTIA) {
@@ -156,7 +157,17 @@ void determine_avoiding_direction(void) {
 			res_y += dy[i];
 		}
 	}
-	if(abs_int(res_x)>abs_int(res_y)) res_max = res_x;
+
+	line_result = LINE_DETECTED;
+	if(res_x != 0 || res_y != 0){
+		line_timer = 0;
+		calculation_of_motor_speeds();
+	} else if(line_timer < LINE_REACTION_TIME){
+		line_timer++;
+	} else {
+		line_result = NO_LINE_DETECTED;
+	}
+	/*if(abs_int(res_x)>abs_int(res_y)) res_max = res_x;
 	else res_max = res_y;
 
 	if(line_timer == LINE_REACTION_TIME && res_max == 0){
@@ -180,7 +191,7 @@ void determine_avoiding_direction(void) {
 		}
 		line_result = LINE_DETECTED;
 		calculation_of_motor_speeds();
-	}
+	}*/
 
 	//chprintf(&SD4, "calculate_lines: %d %d\n", res_x, res_y);
 }
@@ -249,6 +260,10 @@ THD_FUNCTION(LineThread, arg) {
 			//line_calibration_timer++;
 		} else {
 			determine_avoiding_direction();
+			if(line_result == LINE_DETECTED && old_line_result != LINE_DETECTED){
+				send_jetson(LINE_DETECTED_COMMAND);
+			}
+			old_line_result = line_result;
 		}
 		chMsgSend(line_save_thread, line_result);
 		if(l == 0) led_command(SECOND_BLICK);

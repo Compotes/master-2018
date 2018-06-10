@@ -65,15 +65,15 @@ THD_FUNCTION(LedsThread, arg) {
 		else if(msg == FIRST_BLICK) one_blink(0);
 		else if(msg == SECOND_BLICK) one_blink(1);
 		else if(msg == THIRD_BLICK) one_blink(2);
-		else if(msg == FOURTH_BLICK) one_blink(3);
+		//else if(msg == FOURTH_BLICK) one_blink(3);
 		else if(msg == FIRST_ON) led_on(0);
 		else if(msg == SECOND_ON) led_on(1);
 		else if(msg == THIRD_ON) led_on(2);
-		else if(msg == FOURTH_ON) led_on(3);
+		//else if(msg == FOURTH_ON) led_on(3);
 		else if(msg == FIRST_OFF) led_off(0);
 		else if(msg == SECOND_OFF) led_off(1);
 		else if(msg == THIRD_OFF) led_off(2);
-		else if(msg == FOURTH_OFF) led_off(3);
+		//else if(msg == FOURTH_OFF) led_off(3);
 	}
 
 }

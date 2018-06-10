@@ -126,6 +126,7 @@ CSRC = $(STARTUPSRC) \
        leds.c \
        dip_switch.c \
        jetson.c \
+       ultrasonic.c \
        main.c
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global

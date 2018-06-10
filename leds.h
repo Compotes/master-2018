@@ -22,7 +22,7 @@
 #define STOP_BLICK 16
 
 #define FIRST_LED_INDEX 10
-#define NUMBER_OF_LEDS 4
+#define NUMBER_OF_LEDS 3
 
 #define LEDS_QUEUE 16
 

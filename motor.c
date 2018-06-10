@@ -28,6 +28,13 @@ void send_move_message(void) {
 		sdPut(MOTOR_SERIAL, *((uint8_t*)&(writing_motors_speeds[i])+1));
 		sdPut(MOTOR_SERIAL, *((uint8_t*)&(writing_motors_speeds[i])+0));
 	}
+	//hotfix rakusko
+	/*sdPut(MOTOR_SERIAL, *((uint8_t*)&(writing_motors_speeds[2])+1));
+	sdPut(MOTOR_SERIAL, *((uint8_t*)&(writing_motors_speeds[2])+0));
+	sdPut(MOTOR_SERIAL, *((uint8_t*)&(writing_motors_speeds[1])+1));
+	sdPut(MOTOR_SERIAL, *((uint8_t*)&(writing_motors_speeds[1])+0));
+	sdPut(MOTOR_SERIAL, *((uint8_t*)&(writing_motors_speeds[0])+1));
+	sdPut(MOTOR_SERIAL, *((uint8_t*)&(writing_motors_speeds[0])+0));*/
 }
 
 void motor_blick(int8_t motor_id){

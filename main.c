@@ -11,6 +11,7 @@
 #include "dip_switch.h"
 #include "jetson.h"
 #include "chprintf.h"
+#include "ultrasonic.h"
 #include <math.h>
 
 #define MAX_SPEED 923
@@ -32,7 +33,7 @@
 #define OBJECT_NOT_FOUND 420
 #define SEARCH_SPEED 20
 
-#define DRIBLER_REACTION_TIME 500
+#define DRIBLER_REACTION_TIME 600
 
 #define CAMERA_CENTER 4
 #define AROUND_BALL_ALIGN 0
@@ -219,6 +220,7 @@ int main(void) {
 	motors_init();
 	//camera_init();
 	line_init();
+	ultrasonic_init();
 	//compass_init();
 
 	int16_t line_state;
@@ -227,32 +229,57 @@ int main(void) {
 	uint8_t go = FALSE;
 	uint8_t i = 0;
 	int16_t dribler_speed = 0;
-
+	int16_t button;
 	while (1) {
-		motors_off();
 		line_state = check_line();
 		get_jetson_values();//actualize ball_degree, robot_speed, robot_azimuth;
 		//chprintf(&SD3, "%d %d %d\r\n", ball_degree, robot_speed, robot_azimuth);
 		main_command = check_main_mailbox();
-		if(main_command == START_STOP){
-			if(!go){
-				go = TRUE;
-				led_command(FIRST_ON);
-			} else {
+		/*if(main_command == START){
+			send_jetson(START_COMMAND);
+			go = TRUE;
+			led_command(FIRST_ON);
+			chThdSleepMilliseconds(10);
+		} else if(main_command == STOP){
+			send_jetson(STOP_COMMAND);
+			go = FALSE;
+			led_command(FIRST_OFF);
+			chThdSleepMilliseconds(10);
+		} else if(main_command == START_STOP){
+			if(go){
+				send_jetson(STOP_COMMAND);
 				go = FALSE;
 				led_command(FIRST_OFF);
+				chThdSleepMilliseconds(10);
+			} else {
+				send_jetson(START_COMMAND);
+				go = TRUE;
+				led_command(FIRST_ON);
+				chThdSleepMilliseconds(10);
 			}
-			chThdSleepMilliseconds(10);
-		} else if(main_command >= DRIBLER_ON_OFF){
+		} else*/ if(main_command >= DRIBLER_ON_OFF){
 			dribler_speed = main_command - DRIBLER_ON_OFF - 100;
 			chThdSleepMilliseconds(10);
+		}
+
+		if(palReadPad(GPIOD, 14)){
+			button = 10;
+		}
+
+		if(!go && button > 0){
+			go = TRUE;
+			led_command(FIRST_ON);
+			send_jetson(START_COMMAND);
+		} else if(go && button == 0){
+			go = FALSE;
+			led_command(FIRST_OFF);
+			send_jetson(STOP_COMMAND);
 		}
 		//chprintf((BaseSequentialStream*)&SD4, "%d\n", get_compass_degree());
 		//get_camera_values();
 		//chprintf(&SD4, "%d\n", get_dip_switch());
 
-		if(go || palReadPad(GPIOD, 14) || get_start()){
-
+		if(go || get_start()){
 			if(line_state == NO_LINE_DETECTED){
 				set_movement(ball_degree);
 				//for(i = 0; i < NUMBER_OF_MOTORS; i++){
@@ -268,6 +295,8 @@ int main(void) {
 				correct_motors_speeds(using_align, 60, robot_azimuth);
 			}
 			//loop++;
+		} else {
+			motors_off();
 		}
 
 		set_dribler_speed(dribler_speed);
@@ -309,7 +338,10 @@ int main(void) {
 			//kick();
 		}
 		l++;
-		l%=40000;
+		l%=2000;
+		if(button > 0){
+			button--;
+		}
 		//chThdSleepMilliseconds(10);//musim si odichnut
 	}
 }

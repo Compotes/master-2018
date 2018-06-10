@@ -2,6 +2,8 @@
 
 static msg_t main_commands_queue[MAIN_QUEUE];
 static mailbox_t main_commands;
+static msg_t ultrasonic_commands_queue[ULTRASONIC_QUEUE];
+static mailbox_t ultrasonic_commands;
 
 msg_t check_main_mailbox(void){
 	msg_t ret = 0;
@@ -11,6 +13,16 @@ msg_t check_main_mailbox(void){
 
 void send_to_main_mailbox(msg_t sending_command){
 	chMBPost(&main_commands, sending_command, TIME_INFINITE);
+}
+
+msg_t check_ultrasonic_mailbox(void){
+	msg_t ret = 0;
+	chMBFetch(&ultrasonic_commands, &ret, TIME_IMMEDIATE);
+	return ret;
+}
+
+void send_to_ultrasonic_mailbox(msg_t sending_command){
+	chMBPost(&ultrasonic_commands, sending_command, TIME_INFINITE);
 }
 
 void set_pins(void)
@@ -30,29 +42,29 @@ void set_pins(void)
 	palSetPadMode(GPIOD, 10, PAL_MODE_OUTPUT_PUSHPULL);
 	palSetPadMode(GPIOD, 11, PAL_MODE_OUTPUT_PUSHPULL);
 	palSetPadMode(GPIOD, 12, PAL_MODE_OUTPUT_PUSHPULL);
-	palSetPadMode(GPIOD, 13, PAL_MODE_OUTPUT_PUSHPULL);
+	palSetPadMode(GPIOD, 13, PAL_MODE_ALTERNATE(2));
 
 	palClearPad(GPIOD, 10);
 	palClearPad(GPIOD, 11);
 	palClearPad(GPIOD, 12);
-	palClearPad(GPIOD, 13);
+	//palClearPad(GPIOD, 13);
 
 	// UART pins
 
 	palSetPadMode(GPIOD, 5, PAL_MODE_ALTERNATE(7)); // USART_2 Motors
 	palSetPadMode(GPIOD, 6, PAL_MODE_ALTERNATE(7));
 
-	palSetPadMode(GPIOB, 10, PAL_MODE_ALTERNATE(7)); // USART_3 Debug
-	palSetPadMode(GPIOB, 11, PAL_MODE_ALTERNATE(7));
+	palSetPadMode(GPIOB, 10, PAL_MODE_OUTPUT_PUSHPULL); // USART_3 Debug
+	//palSetPadMode(GPIOB, 11, PAL_MODE_ALTERNATE(1));
 
-	palSetPadMode(GPIOC, 10, PAL_MODE_ALTERNATE(8)); // UART_4 Bluetooth
-	palSetPadMode(GPIOC, 11, PAL_MODE_ALTERNATE(8));
+	palSetPadMode(GPIOD, 5, PAL_MODE_ALTERNATE(7)); // UART_4 Bluetooth
+	palSetPadMode(GPIOD, 6, PAL_MODE_ALTERNATE(7));
 
 	palSetPadMode(GPIOC, 6, PAL_MODE_ALTERNATE(8)); // USART_6 Jetson
 	palSetPadMode(GPIOC, 7, PAL_MODE_ALTERNATE(8));
 
-	palSetPadMode(GPIOA, 9, PAL_MODE_ALTERNATE(7));  // USART_1 Compass
-	palSetPadMode(GPIOA, 10, PAL_MODE_ALTERNATE(7));
+	palSetPadMode(GPIOA, 9, PAL_MODE_ALTERNATE(1));  // USART_1 Compass
+	palSetPadMode(GPIOA, 10, PAL_MODE_OUTPUT_PUSHPULL);
 
 	// COMPASS mode pins
 	palSetPadMode(GPIOC, 8, PAL_MODE_OUTPUT_PUSHPULL); // PS0
@@ -123,9 +135,9 @@ static const SerialConfig usart_6_cfg = {
 void init_drivers(void) {
 	sdInit();
 
-	sdStart(&SD1, &usart_1_cfg);
+	//sdStart(&SD1, &usart_1_cfg);
 	sdStart(&SD2, &usart_2_cfg);
-	sdStart(&SD3, &usart_3_cfg);
+	//sdStart(&SD3, &usart_3_cfg);
 	sdStart(&SD4, &usart_4_cfg);
 	sdStart(&SD6, &usart_6_cfg);
 
@@ -138,5 +150,6 @@ void board_init(void) {
 	set_pins();
 	init_drivers();
 
+	chMBObjectInit(&ultrasonic_commands, ultrasonic_commands_queue, ULTRASONIC_QUEUE);
 	chMBObjectInit(&main_commands, main_commands_queue, MAIN_QUEUE);
 }
